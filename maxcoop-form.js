@@ -53,8 +53,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    window.handleIdUpload = function(idType) {
+    // Add event listeners to file inputs
+    const fileInputs = ['NATIONAL_ID', 'DRIVERS_LICENCE', 'INTERNATIONAL_PASSPORT', 'NIN'];
+    fileInputs.forEach(idType => {
         const fileInput = document.getElementById(`file_${idType}`);
+        if (fileInput) {
+            fileInput.addEventListener('change', function() {
+                handleIdUploadEvent(idType, this);
+            });
+        }
+    });
+
+    function handleIdUploadEvent(idType, fileInput) {
         const preview = document.getElementById(`preview_${idType}`);
         const file = fileInput.files[0];
 
@@ -67,6 +77,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 type: file.type,
                 data: e.target.result
             };
+
+            console.log('ID Document uploaded:', idType, file.name); // Debug
 
             // Show preview
             preview.classList.add('active');
@@ -89,7 +101,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
         reader.readAsDataURL(file);
-    };
+    }
 
     window.removeIdUpload = function(idType) {
         const fileInput = document.getElementById(`file_${idType}`);
@@ -122,6 +134,10 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             // Collect form data
             const formData = collectFormData();
+
+            // Debug: Log what we're passing
+            console.log('Passport Image:', passportImageData ? 'Present' : 'Missing');
+            console.log('ID Documents:', idDocuments);
 
             // Generate PDF with passport photo and ID documents
             const pdfBlob = await generatePDF(formData, passportImageData, idDocuments);
@@ -259,7 +275,33 @@ That's it! Thank you for choosing MAXCOOP! 🏡
             }
         });
 
-        if (!isValid) {
+        // Check if ID type is selected and ID is uploaded
+        const idCheckboxes = form.querySelectorAll('input[name="idType"]:checked');
+        if (idCheckboxes.length > 0) {
+            let missingIdUpload = false;
+            idCheckboxes.forEach(checkbox => {
+                const idType = checkbox.value;
+                if (!idDocuments[idType] || !idDocuments[idType].data) {
+                    missingIdUpload = true;
+                    const uploadSection = document.getElementById(`upload_${idType}`);
+                    if (uploadSection) {
+                        uploadSection.style.borderLeft = '3px solid #dc2626';
+                    }
+                } else {
+                    const uploadSection = document.getElementById(`upload_${idType}`);
+                    if (uploadSection) {
+                        uploadSection.style.borderLeft = '3px solid #10b981';
+                    }
+                }
+            });
+
+            if (missingIdUpload) {
+                isValid = false;
+                alert('⚠️ Please upload your selected ID document(s).\n\nYou selected an ID type but haven\'t uploaded the document yet.');
+            }
+        }
+
+        if (!isValid && !idCheckboxes.length) {
             alert('⚠️ Please fill in all required fields marked with (*)\n\nScroll up to see highlighted fields.');
             if (firstInvalidField) {
                 firstInvalidField.scrollIntoView({ behavior: 'smooth', block: 'center' });
