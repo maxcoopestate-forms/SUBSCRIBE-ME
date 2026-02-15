@@ -126,49 +126,67 @@ async function generatePDF(data, passportImageData, idDocuments) {
     if (data.subscriber.idType && data.subscriber.idType !== 'N/A') {
         addSectionHeader('IDENTIFICATION DOCUMENTS');
 
-        const idTypes = data.subscriber.idType.split(','); // ✅ FIXED
+       const idTypes = data.subscriber.idType.split(',');
 
-        for (const idKey of idTypes) {
+for (let rawKey of idTypes) {
 
-            console.log("🔍 Checking:", idKey);
+    // ✅ FIX: clean spaces
+    const idKey = rawKey.trim();
 
-            if (idDocuments[idKey] && idDocuments[idKey].data) {
-                try {
-                    yPos += 5;
+    console.log("🔍 Checking:", idKey);
+    console.log("📦 Data:", idDocuments[idKey]);
 
-                    if (yPos > 200) {
-                        doc.addPage();
-                        yPos = 20;
-                    }
+    // ✅ FIX: FULL SAFETY CHECK
+    if (
+        idDocuments &&
+        idDocuments[idKey] &&
+        idDocuments[idKey].data
+    ) {
+        try {
+            yPos += 5;
 
-                    doc.setFontSize(10);
-                    doc.setFont(undefined, 'bold');
-                    doc.text(idKey.replace(/_/g, ' '), 15, yPos);
-                    yPos += 5;
-
-                    const file = idDocuments[idKey];
-
-                    if (file.type.startsWith('image/')) {
-                        // ✅ FIXED FORMAT
-                        const format = file.type.includes('png') ? 'PNG' : 'JPEG';
-
-                        doc.addImage(file.data, format, 15, yPos, 180, 100);
-                        doc.rect(15, yPos, 180, 100);
-
-                        yPos += 105;
-                    } else {
-                        doc.text("PDF: " + file.name, 15, yPos);
-                        yPos += 10;
-                    }
-
-                } catch (err) {
-                    console.log("❌ ID ERROR:", err);
-                }
-            } else {
-                console.log("❌ Missing:", idKey);
+            if (yPos > 200) {
+                doc.addPage();
+                yPos = 20;
             }
+
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'bold');
+            doc.text(idKey.replace(/_/g, ' '), 15, yPos);
+            yPos += 5;
+
+            const file = idDocuments[idKey];
+
+            // ✅ DOUBLE SAFETY
+            if (!file) {
+                console.log("❌ File missing for:", idKey);
+                continue;
+            }
+
+            if (file.type && file.type.startsWith('image/')) {
+
+                const format = file.type.includes('png') ? 'PNG' : 'JPEG';
+
+                doc.addImage(file.data, format, 15, yPos, 180, 100);
+                doc.rect(15, yPos, 180, 100);
+
+                yPos += 105;
+
+            } else if (file.name) {
+
+                doc.text("PDF: " + file.name, 15, yPos);
+                yPos += 10;
+
+            }
+
+        } catch (err) {
+            console.log("❌ ID ERROR:", err);
         }
+
+    } else {
+        console.log("⚠️ Skipped (no file):", idKey);
     }
+}
 
     // ========================================
     // FOOTER
