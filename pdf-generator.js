@@ -304,7 +304,7 @@ async function generatePDF(data, passportImageData, idDocuments) {
     
     doc.setTextColor(...colors.accentGold);
     doc.setFont(undefined, 'bold');
-    doc.text('MAX CONSTRUCTION HOUSING COOP | 5402057281', 105, 292, { align: 'center' });
+    doc.text('MAXCOOP ESTATE', 105, 292, { align: 'center' });
 
     // Convert to blob
     return doc.output('blob');
